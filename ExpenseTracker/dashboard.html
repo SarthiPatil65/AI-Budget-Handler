@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Expense Tracker - Dashboard</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dashboard-page">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <h2>Expense Tracker</h2>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="active">
+                <a href="#overview"><i class="fas fa-chart-pie"></i> Overview</a>
+            </li>
+            <li>
+                <a href="#transactions"><i class="fas fa-list-alt"></i> Transactions</a>
+            </li>
+            <li>
+                <a href="#analytics"><i class="fas fa-chart-bar"></i> Analytics</a>
+            </li>
+            <li>
+                <a href="#budget"><i class="fas fa-piggy-bank"></i> Budget</a>
+            </li>
+            <li>
+                <a href="#" onclick="app.exportCSV()"><i class="fas fa-file-csv"></i> Export CSV</a>
+            </li>
+            <li>
+                <a href="#" onclick="app.exportPDF()"><i class="fas fa-file-pdf"></i> Export PDF</a>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="theme-toggle" onclick="themeManager.toggle()">
+                <i class="fas fa-moon"></i> Dark Mode
+            </button>
+            <button class="logout-btn" onclick="auth.logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <button class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1>Smart Expense Tracker</h1>
+        <div class="mobile-actions">
+            <button onclick="themeManager.toggle()">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="user-greeting">
+                <h2>Welcome back, <span id="userName">User</span>!</h2>
+                <p id="currentDate"></p>
+            </div>
+            <div class="top-actions">
+                <button class="btn-export" onclick="app.exportCSV()">
+                    <i class="fas fa-file-csv"></i> Export CSV
+                </button>
+                <button class="btn-export" onclick="app.exportPDF()">
+                    <i class="fas fa-file-pdf"></i> Export PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <section id="overview" class="summary-section">
+            <div class="summary-cards">
+                <div class="glass-card summary-card balance">
+                    <div class="card-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>Total Balance</h3>
+                        <p class="amount" id="totalBalance">₹0.00</p>
+                    </div>
+                </div>
+                <div class="glass-card summary-card income">
+                    <div class="card-icon">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>Total Income</h3>
+                        <p class="amount" id="totalIncome">₹0.00</p>
+                    </div>
+                </div>
+                <div class="glass-card summary-card expense">
+                    <div class="card-icon">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="card-info">
+                        <h3>Total Expense</h3>
+                        <p class="amount" id="totalExpense">₹0.00</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Smart Insights -->
+        <section class="insights-section">
+            <div class="glass-card insights-card">
+                <h3><i class="fas fa-lightbulb"></i> Smart Insights</h3>
+                <div id="insightsContainer" class="insights-list">
+                    <!-- Dynamic insights will be inserted here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Budget Progress -->
+        <section id="budget" class="budget-section">
+            <div class="glass-card budget-card">
+                <div class="budget-header">
+                    <h3><i class="fas fa-piggy-bank"></i> Monthly Budget</h3>
+                    <div class="budget-input-group">
+                        <input type="number" id="budgetInput" placeholder="Set budget (₹)" min="0">
+                        <button onclick="app.setBudget()" class="btn-secondary">Set</button>
+                    </div>
+                </div>
+                <div class="budget-progress">
+                    <div class="progress-info">
+                        <span id="budgetSpent">₹0 spent</span>
+                        <span id="budgetTotal">₹0 total</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="budgetProgress"></div>
+                    </div>
+                    <p class="budget-status" id="budgetStatus">Set your monthly budget to track spending</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Expenditures Section -->
+        <section id="expenditures" class="expenditures-section">
+            <div class="glass-card expenditures-card">
+                <div class="expenditures-header">
+                    <h3><i class="fas fa-history"></i> Past Expenditures</h3>
+                </div>
+                
+                <!-- Last 7 Days -->
+                <div class="last-week">
+                    <h4>Last 7 Days</h4>
+                    <div id="lastWeekContainer" class="days-grid">
+                        <!-- Dynamic day cards will be inserted here -->
+                    </div>
+                </div>
+                
+                <!-- Any Day Picker -->
+                <div class="any-day">
+                    <h4>View Any Day</h4>
+                    <div class="day-picker-group">
+                        <input type="date" id="anyDayPicker" onchange="app.renderSelectedDayExpenditure()">
+                        <div id="selectedDayDisplay" class="selected-day-display hidden">
+                            <span class="day-label" id="selectedDayLabel"></span>
+                            <span class="day-amount" id="selectedDayAmount"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section id="analytics" class="charts-section">
+            <div class="charts-grid">
+                <div class="glass-card chart-card">
+                    <h3><i class="fas fa-chart-pie"></i> Category Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-card chart-card">
+                    <h3><i class="fas fa-chart-bar"></i> Transactions Over Time</h3>
+                    <div class="chart-container">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Transactions Section -->
+        <section id="transactions" class="transactions-section">
+            <div class="glass-card transactions-card">
+                <div class="transactions-header">
+                    <h3><i class="fas fa-list-alt"></i> Transactions</h3>
+                    <div class="header-actions">
+                        <button class="btn-reset" onclick="app.resetData()">
+                            <i class="fas fa-trash"></i> Reset
+                        </button>
+                        <button class="btn-primary" onclick="toggleTransactionForm()">
+                            <i class="fas fa-plus"></i> Add Transaction
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transaction Form (Hidden by default) -->
+                <div id="transactionForm" class="transaction-form hidden">
+                    <h4>Add New Transaction</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" id="transDesc" placeholder="e.g., Grocery shopping" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (₹)</label>
+                            <input type="number" id="transAmount" placeholder="0.00" min="0.01" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="transType" onchange="updateCategoryOptions()">
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="transCategory">
+                                <option value="food">Food & Dining</option>
+                                <option value="transport">Transportation</option>
+                                <option value="shopping">Shopping</option>
+                                <option value="entertainment">Entertainment</option>
+                                <option value="bills">Bills & Utilities</option>
+                                <option value="health">Health & Fitness</option>
+                                <option value="education">Education</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="transDate" required>
+                        </div>
+                        <div class="form-group form-actions">
+                            <button type="button" class="btn-primary" onclick="app.addTransaction()">
+                                <i class="fas fa-check"></i> Add
+                            </button>
+                            <button type="button" class="btn-cancel" onclick="toggleTransactionForm()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search & Filter -->
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search transactions..." oninput="app.filterTransactions()">
+                    </div>
+                    <div class="filter-group">
+                        <select id="filterType" onchange="app.filterTransactions()">
+                            <option value="">All Types</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                        <select id="filterCategory" onchange="app.filterTransactions()">
+                            <option value="">All Categories</option>
+                            <option value="food">Food & Dining</option>
+                            <option value="transport">Transportation</option>
+                            <option value="shopping">Shopping</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="bills">Bills & Utilities</option>
+                            <option value="health">Health & Fitness</option>
+                            <option value="education">Education</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <input type="date" id="filterDateFrom" onchange="app.filterTransactions()">
+                        <input type="date" id="filterDateTo" onchange="app.filterTransactions()">
+                    </div>
+                </div>
+
+                <!-- Transaction List -->
+                <div id="transactionList" class="transaction-list">
+                    <!-- Dynamic transactions will be inserted here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer"></div>
+
+    <!-- JavaScript Files -->
+    <script src="js/auth.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Initialize dashboard on load
+        document.addEventListener('DOMContentLoaded', function() {
+            auth.checkSession();
+            themeManager.init();
+            app.init();
+            updateCategoryOptions();
+            document.getElementById('transDate').valueAsDate = new Date();
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+        });
+
+        // Toggle transaction form
+        function toggleTransactionForm() {
+            const form = document.getElementById('transactionForm');
+            form.classList.toggle('hidden');
+        }
+
+        // Update category options based on type
+        function updateCategoryOptions() {
+            const type = document.getElementById('transType').value;
+            const categorySelect = document.getElementById('transCategory');
+            
+            const incomeCategories = [
+                { value: 'salary', text: 'Salary' },
+                { value: 'freelance', text: 'Freelance' },
+                { value: 'investment', text: 'Investment' },
+                { value: 'gift', text: 'Gift' },
+                { value: 'other', text: 'Other' }
+            ];
+            
+            const expenseCategories = [
+                { value: 'food', text: 'Food & Dining' },
+                { value: 'transport', text: 'Transportation' },
+                { value: 'shopping', text: 'Shopping' },
+                { value: 'entertainment', text: 'Entertainment' },
+                { value: 'bills', text: 'Bills & Utilities' },
+                { value: 'health', text: 'Health & Fitness' },
+                { value: 'education', text: 'Education' },
+                { value: 'other', text: 'Other' }
+            ];
+            
+            const categories = type === 'income' ? incomeCategories : expenseCategories;
+            categorySelect.innerHTML = categories.map(c => 
+                `<option value="${c.value}">${c.text}</option>`
+            ).join('');
+        }
+
+        // Toggle sidebar on mobile
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>
+
